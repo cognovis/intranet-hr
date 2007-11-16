@@ -1,6 +1,14 @@
 -- upgrade-3.2.7.0.0-3.2.8.0.0.sql
 
 
+-- Remove the "im_employees e" extra select from employees view
+update im_view_columns set
+        extra_from = ''
+where
+        extra_from  = 'im_employees e'
+        and column_id = 5500;
+
+
 create or replace function inline_0 ()
 returns integer as '
 DECLARE
