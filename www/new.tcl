@@ -155,6 +155,11 @@ if {[llength $rep_cost_ids] == 0} {
 # ------------------------------------------------------------------
 
 set currency_options [im_currency_options]
+set department_options [im_department_options]
+
+if {"" == $end_date} {
+    set end_date $end_century
+}
 
 # Hidden parameter "EmployeeInformationShowDepartmentsOnly". This allows configuration option as follows:
 # Department-1
@@ -219,7 +224,7 @@ set after_html_birthday "<input type=\"button\" style=\"height:20px; width:20px;
 template::form::create $form_id
 template::form::section $form_id ""
 template::element::create $form_id department_id -label $department_label -widget "select"  -options $department_options
-template::element::create $form_id supervisor_id -label $supervisor_label -widget "select"  -options $supervisor_options
+template::element::create $form_id supervisor_id -optional -label $supervisor_label -widget "select"  -options $supervisor_options
 template::element::create $form_id availability -optional -label $availability_label -html {size 6}
 template::element::create $form_id employee_status_id -label $employee_status_label -widget "select"  -options $employee_status_options
 template::element::create $form_id personnel_number -optional -label $personnel_number_label -html {size 10}
@@ -398,7 +403,9 @@ if {[form is_submission $form_id]} {
 		current_job_id = :current_job_id,
 		qualification_id = :qualification_id,
 		vacation_days_per_year = :vacation_days_per_year,
-		vacation_balance = :vacation_balance
+		vacation_balance = :vacation_balance,
+		start_date = :start_date,
+		end_date = :end_date
 	where
 		employee_id = :employee_id
 "
