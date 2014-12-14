@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION inline_0 ()
 RETURNS INTEGER AS
 $$
 declare
+    v_menu  integer;
 begin
 
     perform im_component_plugin__delete(plugin_id) 
@@ -37,6 +38,42 @@ begin
     from im_component_plugins 
     where plugin_name in ('User Reports')
     and package_name = 'intranet-timesheet2';
+
+    perform im_menu__delete((select menu_id from im_menus where label = 'user_reports_component_link' and package_name='intranet-hr'));
+    perform im_menu__delete((select menu_id from im_menus where label = 'user_reports_component_menu' and package_name='intranet-hr'));
+
+
+    v_menu := im_menu__new (
+        null,                           -- p_menu_id
+        'im_menu',                      -- object_type
+        now(),                          -- creation_date
+        null,                           -- creation_user
+        null,                           -- creation_ip
+        null,                           -- context_id
+        'intranet-hr',                  -- package_name
+        'user_reports_component_menu',  -- label
+        'Absences',                     -- name
+        '/intranet-timesheet2/absences/index', -- url
+        10,                             -- sort_order
+        null,                           -- parent_menu_id
+        null                            -- p_visible_tcl
+    );
+
+    perform im_menu__new (
+        null,                           -- p_menu_id
+        'im_menu',                      -- object_type
+        now(),                          -- creation_date
+        null,                           -- creation_user
+        null,                           -- creation_ip
+        null,                           -- context_id
+        'intranet-hr',                  -- package_name
+        'user_reports_component_link',  -- label
+        'User Absences',                -- name
+        '/intranet-timesheet2/absences/index?timescale=all', -- url
+        10,                             -- sort_order
+        v_menu,                           -- parent_menu_id
+        null                            -- p_visible_tcl
+    );
 
     return 1;
 
