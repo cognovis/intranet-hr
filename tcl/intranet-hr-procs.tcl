@@ -170,3 +170,60 @@ ad_proc im_employee_info_component { employee_id return_url {view_name ""} } {
 
     return $employee_html
 }
+
+ad_proc -public im_hr_or_supervisor_p {
+    {-employee_id:required ""}
+} {
+
+    Checks permissions on visibility of HR sensitive data of a user. Usually HR department and the supervisors
+    (from your direct manager up to the chief, following the supervisor_id hierarchy) are allowed to see HR sensitive
+    data. This proc checks whether current_user_id is either in the HR group or in the hierarchy of supervisors
+    from the employee to the CEO.
+
+    @author Neophytos Demetriou
+
+} {
+
+    set current_user_id [ad_get_user_id]
+    
+    # check if current user in HR group
+
+    set sql "
+        select 1 
+        from acs_rels 
+        where object_id_two=:current_user_id
+        and object_id_one = (
+            select group_id 
+            from groups 
+            where group_name='HR Managers'
+        )
+    "
+
+    set member_hr_p [db_string  check_member_hr_p $sql -default 0]
+
+    set view_hr_p [im_permission $current_user_id view_hr]
+
+    if { $member_hr_p || $view_hr_p } { 
+        return 1
+    }
+
+    # check if in hierarchy of supervisors
+    # from the employee to the CEO
+
+    set sql "
+        with recursive nodes(parent_id, child_id) as (
+            select supervisor_id,employee_id 
+            from im_employees 
+            where employee_id=:employee_id
+            union all 
+            select supervisor_id,employee_id 
+            from im_employees e, nodes n 
+            where e.employee_id=n.parent_id
+        ) select 1 from nodes where parent_id=:current_user_id
+    "
+
+    set supervisor_p [db_string check_hierarchy_p $sql -default 0]
+
+    return $supervisor_p
+
+}
