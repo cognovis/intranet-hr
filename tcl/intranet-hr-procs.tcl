@@ -227,3 +227,24 @@ ad_proc -public im_hr_or_supervisor_p {
     return $supervisor_p
 
 }
+
+
+ad_proc -public im_user_reports_component {
+    {-user_id:required ""}
+} {
+    @author Neophytos Demetriou
+} {
+
+    if { ![im_hr_or_supervisor_p -employee_id $user_id] } {
+        # we do not show the component if the current user
+        # is not in the HR group (or the supervisor hierarchy)
+        return ""
+    }
+
+    set params [list \
+		    [list employee_id $user_id]]
+
+    set result [ad_parse_template -params $params "/packages/intranet-hr/lib/user-reports"]
+    return [string trim $result]
+
+}
