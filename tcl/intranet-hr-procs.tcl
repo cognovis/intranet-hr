@@ -188,25 +188,8 @@ ad_proc -public im_hr_or_supervisor_p {
     
     # check if current user in HR group
 
-    set sql "
-        select 1 
-        from acs_rels 
-        where object_id_two=:current_user_id
-        and object_id_one = (
-            select group_id 
-            from groups 
-            where group_name='HR Managers'
-        )
-    "
-
-    set member_hr_p [db_string  check_member_hr_p $sql -default 0]
-
-    set view_hr_p [im_permission $current_user_id view_hr]
-
-    if { $member_hr_p || $view_hr_p } { 
-        return 1
-    }
-
+    if {[im_user_is_hr_p $current_user_id]} {return 1}
+    
     # check if in hierarchy of supervisors
     # from the employee to the CEO
 
@@ -235,7 +218,9 @@ ad_proc -public im_user_reports_component {
     @author Neophytos Demetriou
 } {
 
-    if { ![im_hr_or_supervisor_p -employee_id $user_id] } {
+    set view_p [im_hr_or_supervisor_p -employee_id $user_id]
+
+    if { !$view_p } {
         # we do not show the component if the current user
         # is not in the HR group (or the supervisor hierarchy)
         return ""
@@ -245,6 +230,7 @@ ad_proc -public im_user_reports_component {
 		    [list employee_id $user_id]]
 
     set result [ad_parse_template -params $params "/packages/intranet-hr/lib/user-reports"]
+    ds_comment "result :: $result"
     return [string trim $result]
 
 }

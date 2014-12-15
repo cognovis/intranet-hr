@@ -1,4 +1,4 @@
-SELECT acs_log__debug('/packages/intranet-timesheet2/sql/postgresql/upgrade/upgrade-4.0.3.3.1-4.0.3.3.2.sql','');
+SELECT acs_log__debug('/packages/intranet-timesheet2/sql/postgresql/upgrade/upgrade-4.1.0.0.0-4.1.0.0.1.sql','');
 
 -- -------------------------------------------------------
 -- Create new Absence types for weekends
@@ -52,14 +52,19 @@ begin
         null,                           -- context_id
         'intranet-hr',                  -- package_name
         'user_reports_component_menu',  -- label
-        'Absences',                     -- name
-        '/intranet-timesheet2/absences/index', -- url
+        'User Reports',                     -- name
+        '#', -- url
         10,                             -- sort_order
-        null,                           -- parent_menu_id
+        475,                           -- parent_menu_id (top)
         null                            -- p_visible_tcl
     );
 
-    perform im_menu__new (
+    perform acs_permission__grant_permission(
+        v_menu,
+        (select group_id from groups where group_name = 'Employees'),
+    'read');
+    
+    v_menu := im_menu__new (
         null,                           -- p_menu_id
         'im_menu',                      -- object_type
         now(),                          -- creation_date
@@ -74,6 +79,11 @@ begin
         v_menu,                           -- parent_menu_id
         null                            -- p_visible_tcl
     );
+
+    perform acs_permission__grant_permission(
+        v_menu,
+        (select group_id from groups where group_name = 'Employees'),
+    'read');
 
     return 1;
 
