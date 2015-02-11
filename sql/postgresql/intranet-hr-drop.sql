@@ -44,10 +44,18 @@ drop table im_employees;
 drop function im_supervises_p(integer, integer);
 
 -- before remove priviliges remove granted permissions
-create or replace function inline_revoke_permission (varchar)
-returns integer as '
+
+
+-- added
+select define_function_args('inline_revoke_permission','priv_name');
+
+--
+-- procedure inline_revoke_permission/1
+--
+CREATE OR REPLACE FUNCTION inline_revoke_permission(
+   p_priv_name varchar
+) RETURNS integer AS $$
 DECLARE
-        p_priv_name     alias for $1;
 BEGIN
      lock table acs_permissions_lock;
 
@@ -57,7 +65,8 @@ BEGIN
      where child_privilege = p_priv_name;
      return 0;
 
-end;' language 'plpgsql';
+END;
+$$ LANGUAGE plpgsql;
 
 
 -- begin

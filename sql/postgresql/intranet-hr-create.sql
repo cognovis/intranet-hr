@@ -116,6 +116,11 @@ alter table im_employees
 add constraint im_employees_superv_ck
 check (supervisor_id != employee_id);
 
+insert into im_employees (employee_id) 
+select person_id 
+from persons
+where person_id not in (select employee_id from im_employees);
+
 
 -- Select all information for active employees
 -- (member of Employees group).
@@ -160,11 +165,19 @@ create index im_employees_idx1 on im_employees(employee_id, supervisor_id);
 create index im_employees_idx2 on im_employees(supervisor_id, employee_id);
 
 
-create or replace function im_supervises_p (integer, integer)
-returns char as '
+
+
+-- added
+select define_function_args('im_supervises_p','supervisor_id,user_id');
+
+--
+-- procedure im_supervises_p/2
+--
+CREATE OR REPLACE FUNCTION im_supervises_p(
+   p_supervisor_id integer,
+   p_user_id integer
+) RETURNS char AS $$
 DECLARE
-	p_supervisor_id		alias for $1;
-	p_user_id		alias for $2;
 
 	v_user_id		integer;
 	v_exists_p		char;
@@ -174,7 +187,7 @@ BEGIN
 	v_user_id := p_user_id;
 
 	WHILE v_count < 100 and v_user_id is not null LOOP
-		IF v_user_id = p_supervisor_id THEN return ''t''; END IF;
+		IF v_user_id = p_supervisor_id THEN return 't'; END IF;
 
 		select	e.supervisor_id into v_user_id
 		from	im_employees e
@@ -183,8 +196,9 @@ BEGIN
 		v_count := v_count + 1;
 	END LOOP;
 
-	return ''f'';
-END;' language 'plpgsql';
+	return 'f';
+END;
+$$ LANGUAGE plpgsql;
 
 
 -- at given stages in the employee cycle, certain checkpoints
@@ -238,9 +252,15 @@ select im_component_plugin__new (
 
 -- prompt *** Creating OrgChart menu entry
 -- Add OrgChart to Users menu
-create or replace function inline_0 ()
-returns integer as '
-declare
+
+
+--
+-- procedure inline_0/0
+--
+CREATE OR REPLACE FUNCTION inline_0(
+
+) RETURNS integer AS $$
+DECLARE
 	v_user_orgchart_menu	integer;
 	v_user_menu		integer;
 
@@ -252,43 +272,44 @@ declare
 	v_freelancers   	integer;
 	v_proman		integer;
 	v_admins		integer;
-begin
-	select group_id into v_admins from groups where group_name = ''P/O Admins'';
-	select group_id into v_senman from groups where group_name = ''Senior Managers'';
-	select group_id into v_proman from groups where group_name = ''Project Managers'';
-	select group_id into v_accounting from groups where group_name = ''Accounting'';
-	select group_id into v_employees from groups where group_name = ''Employees'';
-	select group_id into v_customers from groups where group_name = ''Customers'';
-	select group_id into v_freelancers from groups where group_name = ''Freelancers'';
+BEGIN
+	select group_id into v_admins from groups where group_name = 'P/O Admins';
+	select group_id into v_senman from groups where group_name = 'Senior Managers';
+	select group_id into v_proman from groups where group_name = 'Project Managers';
+	select group_id into v_accounting from groups where group_name = 'Accounting';
+	select group_id into v_employees from groups where group_name = 'Employees';
+	select group_id into v_customers from groups where group_name = 'Customers';
+	select group_id into v_freelancers from groups where group_name = 'Freelancers';
 
 	select menu_id
 	into v_user_menu
 	from im_menus
-	where label=''users'';
+	where label='users';
 
 	v_user_orgchart_menu := im_menu__new (
 		null,					-- menu_id
-		''acs_object'',				-- object_type
+		'acs_object',				-- object_type
 		now(),					-- creation_date
 		null,					-- creation_user
 		null,					-- creation_ip
 		null,					-- context_id
-		''intranet-hr'',			-- package_name
-		''users_org_chart'',			-- label
-		''Org Chart'',				-- name
-		''/intranet-hr/org-chart?company_id=0'', -- url
+		'intranet-hr',			-- package_name
+		'users_org_chart',			-- label
+		'Org Chart',				-- name
+		'/intranet-hr/org-chart?company_id=0', -- url
 		5,					-- sort_order
 		v_user_menu,				-- parent_menu_id
 		null					-- visible_tcl
 	);
 
-	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_admins, ''read'');
-	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_senman, ''read'');
-	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_proman, ''read'');
-	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_accounting, ''read'');
-	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_employees, ''read'');
+	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_admins, 'read');
+	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_senman, 'read');
+	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_proman, 'read');
+	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_accounting, 'read');
+	PERFORM acs_permission__grant_permission(v_user_orgchart_menu, v_employees, 'read');
 	return 0;
-end;' language 'plpgsql';
+END;
+$$ LANGUAGE plpgsql;
 
 select inline_0 ();
 drop function inline_0 ();
